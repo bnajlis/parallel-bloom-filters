@@ -31,5 +31,5 @@ is_index2 = test6.filter(lambda x: int(x) == index2).count() > 0
 is_index3 = test6.filter(lambda x: int(x) == index3).count() > 0
 is_index4 = test6.filter(lambda x: int(x) == index4).count() > 0
 
-is_element_there = not(is_index1 and is_index2 and is_index3 and is_index4)
+is_element_there = is_index1 and is_index2 and is_index3 and is_index4
 
