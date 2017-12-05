@@ -15,13 +15,14 @@ def generate_samples(ns, sl, of):
     """Generate file with random sample strings of fixed length"""
     file = open(of, "w")
     valid_chars = string.ascii_uppercase + string.digits
+    
     for x in range(0, ns):
         sample = ''.join(random.choice(valid_chars) for _ in range(sl))
         file.write(sample + os.linesep)
     file.close()
 
 def getopts(argv):
-    """Get command line arguments"""
+    """Get command line arguments and parse them into key-value pairs"""
     opts = {}  # Empty dictionary to store key-value pairs.
     while argv:  # While there are arguments left to parse...
         if argv[0][0] == '-':  # Found a "-name value" pair.

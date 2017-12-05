@@ -1,1 +1,5 @@
 .vscode/*
+.travis.yml
+*.out
+*.out/*
+*.dat
