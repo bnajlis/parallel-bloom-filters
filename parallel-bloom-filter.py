@@ -20,6 +20,7 @@ def create_spark_context():
 def create_bloom_filter(in_fname, out_fname):
     
     """Creates a Bloom Filter index from input filename and writes to out filename"""
+    # Create Spark Context
     sc = create_spark_context()
 
     # Read the input file into an RDD
@@ -43,24 +44,52 @@ def create_bloom_filter(in_fname, out_fname):
 
     # Create a set per index, so we can use reduceByKey to remove duplicates
     in_mapped = in_allhashes.map(lambda x: (x, 1))
-    # Use reduceByKey to remove index duplicates (d)
-    in_nodupes = in_mapped.reduceByKey(lambda x, y: 1)
+    # Use reduceByKey to remove index duplicates (d). Sort before saving
+    in_nodupes = in_mapped.reduceByKey(lambda x, y: 1).sortByKey()
     # This is the list of indices set to 1 in the Bloom Filter
-    bloom_indices = in_nodupes.map(lambda x: x[0])
+    bloom_indices = in_nodupes.map(lambda x: x[0])  
+
     # Save Bloom Filter indices to output file
     bloom_indices.saveAsTextFile(out_fname)
 
 def validate_bloom_filter(infile, item):
-    return 0
+    """Checks if an item exists in a set of indices for a bloom filter"""
+    # Create Spark Context
+    sc = create_spark_context()
+
+    # Get the index value to check for the four hash functions we are using
+    index_md5 = int(hashlib.md5(item.encode("utf-8")).hexdigest(),16) % (10 ** 6)
+    index_sha224 = int(hashlib.sha224(item.encode("utf-8")).hexdigest(),16) % (10 ** 6)
+    index_sha256 = int(hashlib.sha256(item.encode("utf-8")).hexdigest(),16) % (10 ** 6)
+    index_sha384 = int(hashlib.sha384(item.encode("utf-8")).hexdigest(),16) % (10 ** 6)
+    
+    # Read the file with the Bloom filter indices previously created
+    bloom_filter_indices = sc.textFile(infile)
+
+    # Get the indices for each of the hash functions
+    is_index1 = bloom_filter_indices.filter(lambda x: int(x) == index_md5).count() > 0
+    is_index2 = bloom_filter_indices.filter(lambda x: int(x) == index_sha224).count() > 0
+    is_index3 = bloom_filter_indices.filter(lambda x: int(x) == index_sha256).count() > 0
+    is_index4 = bloom_filter_indices.filter(lambda x: int(x) == index_sha384).count() > 0
+
+    # Get logical AND of all index existance flags
+    is_element_there = is_index1 and is_index2 and is_index3 and is_index4
+
+    # Print message with results depending on indices 
+    if is_element_there:
+        print("Element ", item, "may exist in the set of elements.")
+    else:
+        print("Element ", item, "does not exist in the set of elements")
+
 
 
 if __name__ == '__main__':
     myargs = getopts(sys.argv)
-    if '-mode' and '-data' and '-index' in myargs:
+    if ('-mode' in myargs) and ('-data' in myargs) and ('-index' in myargs) :
         infile = myargs['-data']
         outfile = myargs['-index']
         create_bloom_filter(infile, outfile)
-    elif '-mode' and '-index' and '-validate' in myargs:
+    elif ('-mode' in myargs) and ('-index' in myargs) and ('-validate' in myargs):
         infile = myargs['-index']
         item = myargs['-validate']
         validate_bloom_filter(infile, item)
