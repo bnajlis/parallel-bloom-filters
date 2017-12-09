@@ -56,11 +56,11 @@ def validate_bloom_filter(infile, item):
 
 if __name__ == '__main__':
     myargs = getopts(sys.argv)
-    if '-create' and '-data' and '-index' in myargs:
+    if '-mode' and '-data' and '-index' in myargs:
         infile = myargs['-data']
         outfile = myargs['-index']
         create_bloom_filter(infile, outfile)
-    elif '-validate' and '-index' in myargs:
+    elif '-mode' and '-index' and '-validate' in myargs:
         infile = myargs['-index']
         item = myargs['-validate']
         validate_bloom_filter(infile, item)
@@ -73,11 +73,11 @@ if __name__ == '__main__':
         print()
         print("Usage:")
         print("To create a Bloom filter index file from an existing data file:")
-        print("   spark-submit parallel-bloom-filter.py -create -data [data_filename] -index [index_output_filename]")
-        print("Example: spark-submit parallel-bloom-filter.py -create -data ./data.dat -index ./bloom_filter.dat")
+        print("   spark-submit parallel-bloom-filter.py -mode create -data [data_filename] -index [index_output_filename]")
+        print("Example: spark-submit parallel-bloom-filter.py -mode create -data ./data.dat -index ./bloom_filter.dat")
         print()
         print("To validate an item existing in a previously created filter:")
-        print("   spark-submit parallel-bloom-filter.py -validate -index [index_output_filename] -item [item_to_validate]")
-        print("Example: spark-submit parallel-bloom-filter.py -validate -index ./bloom_filter.dat -item QGTYPF&UOHY")
+        print("   spark-submit parallel-bloom-filter.py -mode validate -index [index_output_filename] -item [item_to_validate]")
+        print("Example: spark-submit parallel-bloom-filter.py -mode validate -index ./bloom_filter.dat -item QGTYPF&UOHY")
 
 
