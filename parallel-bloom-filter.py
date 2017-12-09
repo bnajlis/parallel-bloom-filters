@@ -1,6 +1,7 @@
 """ Parallel Bloom Filter Implementation in PySpark"""
 import sys
 import hashlib
+import math
 from pyspark import SparkContext
 
 def getopts(argv):
@@ -25,16 +26,31 @@ def create_bloom_filter(in_fname, out_fname):
 
     # Read the input file into an RDD
     in_data = sc.textFile(in_fname)
+
+    # First we need to find out how large our Bloom Filter should be
+    # This will determine the length of the indices we will get from the hash functions
+
+    # In this implementation, the number of hash functions is preset to 4
+    k = 4
+    # Count the number of elements in the input
+    n = in_data.count()
+    # m gives how many indices we need
+    m = k * n / (math.log(2))
+    # Number of digits we need to take out of each hash function to get the indices
+    num_of_digits = len(str(m))
+
+    print("Bloom filter will use indices of length:", num_of_digits)
+
     # Split the input file into multiple lines
     in_split = in_data.flatMap(lambda x: x.split())
 
     # Apply four different hash functions to create the Bloom filter
     # Each one of these RDDs has the indice that will be set to 1
     # to mark the existance of the input elements
-    in_md5    = in_split.map(lambda x: int(hashlib.md5(x.encode("utf-8")).hexdigest(),16) % (10 ** 6))
-    in_sha224 = in_split.map(lambda x: int(hashlib.sha224(x.encode("utf-8")).hexdigest(),16) % (10 ** 6))
-    in_sha256 = in_split.map(lambda x: int(hashlib.sha256(x.encode("utf-8")).hexdigest(),16) % (10 ** 6))
-    in_sha384 = in_split.map(lambda x: int(hashlib.sha384(x.encode("utf-8")).hexdigest(),16) % (10 ** 6))
+    in_md5    = in_split.map(lambda x: int(hashlib.md5(x.encode("utf-8")).hexdigest(),16) % (10 ** num_of_digits))
+    in_sha224 = in_split.map(lambda x: int(hashlib.sha224(x.encode("utf-8")).hexdigest(),16) % (10 ** num_of_digits))
+    in_sha256 = in_split.map(lambda x: int(hashlib.sha256(x.encode("utf-8")).hexdigest(),16) % (10 ** num_of_digits))
+    in_sha384 = in_split.map(lambda x: int(hashlib.sha384(x.encode("utf-8")).hexdigest(),16) % (10 ** num_of_digits))
 
     # Union all sets of indices, so we know the full collection of indices that have to be set to 1
     in_allhashes = in_md5.union(in_sha384).union(in_sha256).union(in_sha224)
@@ -52,16 +68,16 @@ def create_bloom_filter(in_fname, out_fname):
     # Save Bloom Filter indices to output file
     bloom_indices.saveAsTextFile(out_fname)
 
-def validate_bloom_filter(infile, item):
+def validate_bloom_filter(infile, item, num_of_digits):
     """Checks if an item exists in a set of indices for a bloom filter"""
     # Create Spark Context
     sc = create_spark_context()
 
     # Get the index value to check for the four hash functions we are using
-    index_md5 = int(hashlib.md5(item.encode("utf-8")).hexdigest(),16) % (10 ** 6)
-    index_sha224 = int(hashlib.sha224(item.encode("utf-8")).hexdigest(),16) % (10 ** 6)
-    index_sha256 = int(hashlib.sha256(item.encode("utf-8")).hexdigest(),16) % (10 ** 6)
-    index_sha384 = int(hashlib.sha384(item.encode("utf-8")).hexdigest(),16) % (10 ** 6)
+    index_md5    = int(hashlib.md5(item.encode("utf-8")).hexdigest(),16) % (10 ** num_of_digits)
+    index_sha224 = int(hashlib.sha224(item.encode("utf-8")).hexdigest(),16) % (10 ** num_of_digits)
+    index_sha256 = int(hashlib.sha256(item.encode("utf-8")).hexdigest(),16) % (10 ** num_of_digits)
+    index_sha384 = int(hashlib.sha384(item.encode("utf-8")).hexdigest(),16) % (10 ** num_of_digits)
     
     # Read the file with the Bloom filter indices previously created
     bloom_filter_indices = sc.textFile(infile)
@@ -77,9 +93,9 @@ def validate_bloom_filter(infile, item):
 
     # Print message with results depending on indices 
     if is_element_there:
-        print("Element ", item, "may exist in the set of elements.")
+        print("Element ", item, "is possibly in the set of elements.")
     else:
-        print("Element ", item, "does not exist in the set of elements")
+        print("Element ", item, "is definitely not in the set of elements")
 
 
 
@@ -89,10 +105,11 @@ if __name__ == '__main__':
         infile = myargs['-data']
         outfile = myargs['-index']
         create_bloom_filter(infile, outfile)
-    elif ('-mode' in myargs) and ('-index' in myargs) and ('-validate' in myargs):
+    elif ('-mode' in myargs) and ('-index' in myargs) ('-num_digits' in myargs) and ('-validate' in myargs):
         infile = myargs['-index']
         item = myargs['-validate']
-        validate_bloom_filter(infile, item)
+        num_of_digits = myargs['-num_digits']
+        validate_bloom_filter(infile, item, num_of_digits)
     else:
         print("Parallel Bloom Filter Generator")
         print("============================")
