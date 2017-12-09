@@ -37,9 +37,10 @@ def create_bloom_filter(in_fname, out_fname):
     # m gives how many indices we need
     m = k * n / (math.log(2))
     # Number of digits we need to take out of each hash function to get the indices
-    num_of_digits = len(str(m))
 
+    print("*********************************************************")
     print("Bloom filter will use indices of length:", num_of_digits)
+    print("*********************************************************")
 
     # Split the input file into multiple lines
     in_split = in_data.flatMap(lambda x: x.split())
@@ -105,7 +106,7 @@ if __name__ == '__main__':
         infile = myargs['-data']
         outfile = myargs['-index']
         create_bloom_filter(infile, outfile)
-    elif ('-mode' in myargs) and ('-index' in myargs) ('-num_digits' in myargs) and ('-validate' in myargs):
+    elif ('-mode' in myargs) and ('-index' in myargs) and ('-num_digits' in myargs) and ('-validate' in myargs):
         infile = myargs['-index']
         item = myargs['-validate']
         num_of_digits = myargs['-num_digits']
