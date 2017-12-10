@@ -4,13 +4,24 @@ Scalable Parallelized version of Bloom Filters
 
 A Bloom filter is a space-efficient probabilistic data structure, conceived by Burton Howard Bloom in 1970, that is used to test whether an element is a member of a set. False positive matches are possible, but false negatives are not – in other words, a query returns either "possibly in set" or "definitely not in set". Elements can be added to the set, but not removed (though this can be addressed with a "counting" filter); the more elements that are added to the set, the larger the probability of false positives. [Wikipedia: https://en.wikipedia.org/wiki/Bloom_filter]
 
-There is a relationship between the number of hash functions and the length of the bit array.
+This parallelized version of Bloom Filters uses Spark to scale the filter to massive data sets. The code was created using Python (Pyspark) and includes three scripts:
 
-k: Number of hash functions
-m: Length of the bit array
-n: Number of elements
+** generate-sample-data.py: Used to generate random sample data, used for benchmarking and testing purposes
+** parallel-bloom-filter.py: Includes the code to generate the bloom filter structure, and test for elements existance in the set
 
-The length of the array for k=4 (4 hash functions) is 144,270 items in the bit array.
-As our hash functions return integers larger than a reasonable size array index, we will take just a slice of the integer returned by the hash function, so that will be our new hash function (i.e. md5 + taking the last x digits of the hash digest).
+The code is simple enough so that it can be extended to, for example, be used with Spark Streaming for testing purposes.
 
-Based on our calculations, with 144,270 possible indexes, we will take the last 6 positions on the digest, so our array will have 99,999 bits.
+Details on Bloom Filters implementation
+=======================================
+
+Being the Bloom Filter a probabilistic approach, there is an inherent relationship between the number of elements in the source set, the number of elements in the Filter's index, and the number of hash functions required. This relationship is given by:
+(https://wikimedia.org/api/rest_v1/media/math/render/svg/fabc2770225ac59fe42a78f75ea89de650f0130c)
+
+where
+  * m: required number of bits (length of the bit array)
+  * n: number of inserted elements
+  * k: number of hash functions
+
+This implementation sets the number of hash functions to four, so we count n (number of items to be inserted) to determine m (required number of bits). The number of bits determine how large should our index numbers should be.
+
+If you want to change the number of hash functions used, update the constant k in the calculation to obtain the correct number of bits in the filter array.
