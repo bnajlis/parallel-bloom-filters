@@ -37,6 +37,7 @@ def create_bloom_filter(in_fname, out_fname):
     # m gives how many indices we need
     m = k * n / (math.log(2))
     # Number of digits we need to take out of each hash function to get the indices
+    num_of_digits = len(str(int(m)))
 
     print("*********************************************************")
     print("Bloom filter will use indices of length:", num_of_digits)

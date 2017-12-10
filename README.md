@@ -15,7 +15,7 @@ Details on Bloom Filters implementation
 =======================================
 
 Being the Bloom Filter a probabilistic approach, there is an inherent relationship between the number of elements in the source set, the number of elements in the Filter's index, and the number of hash functions required. This relationship is given by:
-(https://wikimedia.org/api/rest_v1/media/math/render/svg/fabc2770225ac59fe42a78f75ea89de650f0130c)
+!(https://wikimedia.org/api/rest_v1/media/math/render/svg/fabc2770225ac59fe42a78f75ea89de650f0130c "Bloom Filter")
 
 where
   * m: required number of bits (length of the bit array)
