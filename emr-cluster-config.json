@@ -1,0 +1,11 @@
+[
+    {
+        "Classification":"spark-defaults",
+        "Properties":
+        {
+            "spark.executor.instances":"0",
+            "spark.dynamicAllocation.enabled":"true",
+            "spark.yarn.executor.memoryOverhead":"8192"
+        }
+    }
+]
