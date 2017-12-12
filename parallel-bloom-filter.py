@@ -1,8 +1,10 @@
 """ Parallel Bloom Filter Implementation in PySpark"""
+from __future__ import print_function
 import sys
 import hashlib
 import math
 from pyspark import SparkContext
+from pyspark.sql import SparkSession
 
 def getopts(argv):
     """Get command line arguments and parse them into key-value pairs"""
@@ -15,11 +17,14 @@ def getopts(argv):
 
 def create_spark_context():
     """ Creates default spark context"""
-    sc = SparkContext("local", "ParallelBloomFilter")
-    return sc
+    #sc = SparkContext("local", "ParallelBloomFilter")
+    spark = SparkSession\
+        .builder\
+        .appName("ParallelBloomFilter")\
+        .getOrCreate()
+    return spark.sparkContext
 
 def create_bloom_filter(in_fname, out_fname):
-    
     """Creates a Bloom Filter index from input filename and writes to out filename"""
     # Create Spark Context
     sc = create_spark_context()
@@ -65,7 +70,7 @@ def create_bloom_filter(in_fname, out_fname):
     # Use reduceByKey to remove index duplicates (d). Sort before saving
     in_nodupes = in_mapped.reduceByKey(lambda x, y: 1).sortByKey()
     # This is the list of indices set to 1 in the Bloom Filter
-    bloom_indices = in_nodupes.map(lambda x: x[0])  
+    bloom_indices = in_nodupes.map(lambda x: x[0])
 
     # Save Bloom Filter indices to output file
     bloom_indices.saveAsTextFile(out_fname)
@@ -80,7 +85,7 @@ def validate_bloom_filter(infile, item, num_of_digits):
     index_sha224 = int(hashlib.sha224(item.encode("utf-8")).hexdigest(),16) % (10 ** num_of_digits)
     index_sha256 = int(hashlib.sha256(item.encode("utf-8")).hexdigest(),16) % (10 ** num_of_digits)
     index_sha384 = int(hashlib.sha384(item.encode("utf-8")).hexdigest(),16) % (10 ** num_of_digits)
-    
+
     # Read the file with the Bloom filter indices previously created
     bloom_filter_indices = sc.textFile(infile)
 
@@ -93,7 +98,7 @@ def validate_bloom_filter(infile, item, num_of_digits):
     # Get logical AND of all index existance flags
     is_element_there = is_index1 and is_index2 and is_index3 and is_index4
 
-    # Print message with results depending on indices 
+    # Print message with results depending on indices
     if is_element_there:
         print("Element ", item, "is possibly in the set of elements.")
     else:
@@ -103,7 +108,7 @@ def validate_bloom_filter(infile, item, num_of_digits):
 
 if __name__ == '__main__':
     myargs = getopts(sys.argv)
-    if ('-mode' in myargs) and ('-data' in myargs) and ('-index' in myargs) :
+    if ('-mode' in myargs) and ('-data' in myargs) and ('-index' in myargs):
         infile = myargs['-data']
         outfile = myargs['-index']
         create_bloom_filter(infile, outfile)
@@ -127,5 +132,3 @@ if __name__ == '__main__':
         print("To validate an item existing in a previously created filter:")
         print("   spark-submit parallel-bloom-filter.py -mode validate -index [index_output_filename] -item [item_to_validate]")
         print("Example: spark-submit parallel-bloom-filter.py -mode validate -index ./bloom_filter.dat -item QGTYPF&UOHY")
-
-
